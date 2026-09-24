@@ -1,0 +1,305 @@
+<resources>
+    <string name="app_name">Relay</string>
+    <!--  ── Auth / Login ──  -->
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="label_password_required">Password*</string>
+    <string name="placeholder_enter_email">Enter your email</string>
+    <string name="placeholder_enter_password">Enter your password</string>
+    <string name="placeholder_repeat_password">Repeat your password</string>
+    <string name="btn_login">Login</string>
+    <string name="btn_register">Register</string>
+    <string name="btn_registering">Registering…</string>
+    <string name="link_forgot_password">Forgot password?</string>
+    <string name="prompt_no_account">You don\'t have an account?</string>
+    <!--  ── Register ──  -->
+    <string name="label_username_note">Username* (You won\'t be able to change this later)</string>
+    <string name="placeholder_enter_username">Enter your username</string>
+    <string name="label_confirm_password">Confirm Password*</string>
+    <string name="note_required_fields">* Required fields</string>
+    <string name="btn_continue">Continue</string>
+    <string name="label_display_name">Display name</string>
+    <string name="placeholder_display_name">Enter the name you want to display</string>
+    <string name="hint_setup_profile">Set up your profile (optional)</string>
+    <string name="label_university">University</string>
+    <string name="placeholder_select_university">Select your university</string>
+    <string name="label_course">Course</string>
+    <string name="placeholder_select_course">Select your course</string>
+    <string name="placeholder_select_university_first">Select a university first</string>
+    <string name="label_address">Address</string>
+    <string name="placeholder_address">Enter your city or town</string>
+    <string name="btn_previous">Previous</string>
+    <string name="btn_skip">Skip</string>
+    <!--  ── Recover Password ──  -->
+    <string name="title_forgot_password">Forgot Password</string>
+    <string name="btn_send_recovery_email">Send Recovery Email</string>
+    <string name="title_enter_reset_token">Enter Reset Token</string>
+    <string name="hint_check_email_token">Check your email for the token we sent you.</string>
+    <string name="label_token">Token</string>
+    <string name="btn_verify_token">Verify Token</string>
+    <string name="title_reset_password">Reset Password</string>
+    <string name="label_new_password">New Password</string>
+    <!--  ── Validation errors ──  -->
+    <string name="error_invalid_email">Invalid email</string>
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_password_required">Password is required</string>
+    <string name="error_password_min_6">Password must be at least 6 characters long</string>
+    <string name="error_password_min_8">Password must be at least 8 characters</string>
+    <string name="error_passwords_no_match">Passwords do not match</string>
+    <string name="error_username_required">Username is required</string>
+    <string name="error_no_spaces">No spaces allowed</string>
+    <string name="error_min_3_chars">At least 3 characters</string>
+    <string name="error_min_8_chars">At least 8 characters</string>
+    <string name="error_required">Required</string>
+    <string name="error_invalid_token">Invalid or expired token</string>
+    <string name="error_action_failed">Action failed</string>
+    <string name="error_something_went_wrong">Something went wrong</string>
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_could_not_open_conversation">Could not open conversation</string>
+    <string name="error_failed_open_conversation">Failed to open conversation</string>
+    <string name="error_failed_send_offer">Failed to send offer</string>
+    <!--  ── Home ──  -->
+    <string name="placeholder_search">Pesquisar…</string>
+    <string name="cd_clear_search">Limpar</string>
+    <string name="cd_notifications">Notificações</string>
+    <string name="chip_all">Todos</string>
+    <string name="btn_see_all">Ver todas</string>
+    <string name="label_categories">Categorias</string>
+    <string name="empty_no_results">Sem resultados para \"%1$s\"</string>
+    <string name="empty_no_publications_category">Sem publicações nesta categoria</string>
+    <string name="error_loading_prefix">Erro: %1$s</string>
+    <!--  ── Navigation Bar ──  -->
+    <string name="nav_home">Home</string>
+    <string name="nav_messages">Messages</string>
+    <string name="nav_requests">Requests</string>
+    <string name="nav_profile">Profile</string>
+    <!--  ── Product / Listing ──  -->
+    <string name="screen_title_details">Detalhes</string>
+    <string name="cd_back">Voltar</string>
+    <string name="cd_back_en">Back</string>
+    <string name="label_condition">Estado: %1$s</string>
+    <string name="label_duration">Duração: %1$s</string>
+    <string name="label_zones">Zonas: %1$s</string>
+    <string name="label_description">Descrição</string>
+    <string name="cd_seller_avatar">Avatar do vendedor</string>
+    <string name="btn_make_offer">Proposta</string>
+    <string name="btn_buy_now">Comprar Agora</string>
+    <string name="btn_borrow">Pedir Emprestado</string>
+    <string name="btn_edit">Editar</string>
+    <string name="btn_delete">Eliminar</string>
+    <string name="dialog_title_delete_listing">Eliminar publicação</string>
+    <string name="dialog_msg_delete_listing">Tens a certeza que queres eliminar \"%1$s\"? Esta ação não pode ser desfeita.</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_confirm">Confirmar</string>
+    <string name="btn_confirm_delete">Eliminar</string>
+    <string name="btn_retry">Retry</string>
+    <string name="label_price_euros">%1$s€</string>
+    <!--  Condition labels  -->
+    <string name="condition_new">Novo</string>
+    <string name="condition_like_new">Como novo</string>
+    <string name="condition_good">Bom estado</string>
+    <string name="condition_fair">Estado razoável</string>
+    <string name="condition_poor">Mau estado</string>
+    <!--  ── Create / Edit Resource ──  -->
+    <string name="screen_title_create_listing">Publicar Artigo</string>
+    <string name="screen_title_edit_listing">Editar Publicação</string>
+    <string name="btn_publish">Publicar</string>
+    <string name="btn_save">Guardar</string>
+    <string name="tab_sell">Vender</string>
+    <string name="tab_lend">Emprestar</string>
+    <string name="label_select_image">Selecionar imagem</string>
+    <string name="label_title_colon">Título:</string>
+    <string name="label_description_colon">Descrição:</string>
+    <string name="label_category_colon">Categoria:</string>
+    <string name="label_condition_colon">Estado:</string>
+    <string name="label_price_colon">Preço:</string>
+    <string name="label_max_duration_colon">Duração máxima:</string>
+    <string name="label_zones_colon">Zonas:</string>
+    <string name="placeholder_duration_hint">Ex: 7 dias</string>
+    <string name="placeholder_zones_hint">Ex: Centro, Universidade</string>
+    <string name="error_title_empty">O título não pode estar vazio</string>
+    <string name="label_loading">A carregar…</string>
+    <string name="btn_select">Selecionar</string>
+    <!--  ── Create Request ──  -->
+    <string name="screen_title_publish_item">Publicar Artigo</string>
+    <string name="btn_make_request">Make Request</string>
+    <string name="btn_create">Create</string>
+    <string name="btn_publish_item">Publish Item</string>
+    <string name="btn_publish_alt">Publish</string>
+    <!--  ── Borrow ──  -->
+    <string name="screen_title_borrow">Pedir emprestado</string>
+    <string name="label_zones_section">Zonas</string>
+    <string name="label_start_date">Início</string>
+    <string name="label_end_date">Fim</string>
+    <string name="label_meeting_point">Ponto de encontro</string>
+    <string name="placeholder_select_pickup">Selecione um ponto de recolha</string>
+    <string name="label_duration_section">Duração</string>
+    <string name="label_duration_value">Duração: %1$s</string>
+    <string name="btn_submit_request">Fazer pedido</string>
+    <string name="label_select">Selecionar</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancelar</string>
+    <!--  ── Purchase ──  -->
+    <string name="screen_title_purchase">Comprar</string>
+    <string name="label_price_prefix">Preço: %1$s</string>
+    <string name="label_meeting_point_section">Ponto de encontro</string>
+    <string name="label_payment_method">Método de pagamento</string>
+    <string name="label_total_to_pay">Total a pagar</string>
+    <string name="btn_complete_purchase">Fazer compra</string>
+    <string name="prompt_choose_payment">Escolha um método de pagamento</string>
+    <string name="prompt_select_payment">Selecione um método de pagamento</string>
+    <string name="btn_back">Voltar</string>
+    <!--  ── Profile ──  -->
+    <string name="screen_title_my_profile">O meu perfil</string>
+    <string name="label_seller">Vendedor</string>
+    <string name="label_client">Cliente</string>
+    <string name="label_location">Localização</string>
+    <string name="label_university_pt">Universidade</string>
+    <string name="nav_history">Histórico</string>
+    <string name="nav_pending_reviews">Avaliações pendentes</string>
+    <string name="nav_pending_reviews_count">Avaliações pendentes (%1$d)</string>
+    <string name="nav_edit_profile">Editar Perfil</string>
+    <string name="nav_settings">Definições</string>
+    <string name="label_publications">Publicações</string>
+    <string name="cd_profile_picture">Foto de perfil</string>
+    <!--  ── Edit Profile ──  -->
+    <string name="screen_title_edit_profile">Editar perfil</string>
+    <string name="btn_add_photo">Adicionar fotografia</string>
+    <string name="btn_change_photo">Alterar fotografia</string>
+    <string name="label_display_name_pt">Nome a apresentar</string>
+    <string name="placeholder_display_name_pt">Como queres ser apresentado</string>
+    <string name="label_university_pt_field">Universidade</string>
+    <string name="placeholder_choose_university">Escolhe a tua universidade</string>
+    <string name="label_course_pt">Curso</string>
+    <string name="placeholder_choose_course">Escolhe o teu curso</string>
+    <string name="placeholder_choose_university_first">Escolhe primeiro uma universidade</string>
+    <string name="label_city">Cidade ou localidade</string>
+    <string name="placeholder_search_location">Pesquisar localização</string>
+    <string name="btn_save_changes">Guardar</string>
+    <string name="btn_change_alt">Alterar</string>
+    <string name="error_update_photo">Não foi possível atualizar a foto</string>
+    <string name="error_update_profile">Não foi possível atualizar o perfil</string>
+    <string name="error_load_profile">Não foi possível carregar o perfil</string>
+    <!--  ── Change Username ──  -->
+    <string name="label_new_username">Novo nome de utilizador</string>
+    <string name="placeholder_new_username">Introduza o seu novo nome de utilizador</string>
+    <!--  ── Settings ──  -->
+    <string name="screen_title_settings">Definições</string>
+    <string name="label_notifications_toggle">Notificações</string>
+    <string name="label_show_location">Mostrar localização no perfil</string>
+    <string name="btn_logout">Terminar Sessão</string>
+    <string name="btn_delete_account">Eliminar a minha conta</string>
+    <!--  ── Notifications ──  -->
+    <string name="screen_title_notifications">Notificações</string>
+    <string name="btn_mark_all_read">Marcar tudo</string>
+    <string name="empty_no_notifications">Sem notificações</string>
+    <!--  ── Messages / Conversations ──  -->
+    <string name="screen_title_messages">Messages</string>
+    <string name="empty_no_conversations">No conversations yet</string>
+    <string name="placeholder_message">Message…</string>
+    <string name="btn_send">Enviar</string>
+    <string name="btn_send_en">Send</string>
+    <string name="label_offer_prompt">Insira o valor que pretende propor ao vendedor.</string>
+    <string name="btn_propose_offer">Propor</string>
+    <string name="btn_make_offer_alt">Fazer proposta</string>
+    <!--  ── Transaction Detail ──  -->
+    <string name="label_resource">Recurso</string>
+    <string name="label_created_at">Criado em</string>
+    <string name="label_agreed_price">Preço acordado</string>
+    <string name="label_borrow_type">Empréstimo</string>
+    <string name="label_sale_type">Venda</string>
+    <string name="label_purchase_type">Compra</string>
+    <string name="label_borrowed_item">Item emprestado</string>
+    <string name="label_you_lent">Emprestaste o teu item</string>
+    <string name="label_borrow_requested">Empréstimo pedido</string>
+    <string name="label_you_borrowed">Pediste emprestado</string>
+    <string name="btn_evaluate">Avaliar</string>
+    <string name="btn_confirm_reception">Confirmar Receção</string>
+    <string name="btn_mark_returned">Marcar como Devolvido</string>
+    <string name="btn_approve">Aprovar</string>
+    <string name="btn_reject">Rejeitar</string>
+    <string name="btn_reject_alt">Recusar</string>
+    <string name="btn_accept">Aceitar</string>
+    <string name="btn_cancel_transaction">Cancelar</string>
+    <string name="other_party_label">Contraparte da transação</string>
+    <!--  ── Transaction status labels ──  -->
+    <string name="status_pending">Pendente</string>
+    <string name="status_approved">Aprovado</string>
+    <string name="status_active">Ativo</string>
+    <string name="status_completed">Concluído</string>
+    <string name="status_rejected">Rejeitado</string>
+    <string name="status_cancelled">Cancelado</string>
+    <string name="status_failed">Falhado</string>
+    <string name="status_awaiting_owner">Aguarda dono</string>
+    <string name="status_awaiting_seller">Aguarda vendedor</string>
+    <string name="status_approved_success">Aprovado com sucesso</string>
+    <string name="status_returned">Devolvido</string>
+    <string name="status_return_registered">Devolução registada</string>
+    <string name="status_request_sent">Pedido enviado</string>
+    <!--  ── History ──  -->
+    <string name="screen_title_history">Histórico</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_borrow">Empréstimos</string>
+    <string name="filter_purchase">Compras</string>
+    <string name="empty_no_transactions">Sem transações</string>
+    <string name="label_sold">Vendido</string>
+    <string name="label_purchased">Comprado</string>
+    <string name="label_pending_transaction">Pedido</string>
+    <!--  ── Reviews ──  -->
+    <string name="screen_title_review">Avaliação</string>
+    <string name="title_pending_reviews">Avaliações pendentes</string>
+    <string name="empty_no_pending_reviews">Não tens avaliações pendentes.</string>
+    <string name="empty_no_reviews">Ainda não há avaliações.</string>
+    <string name="btn_write_review">Avaliar</string>
+    <string name="btn_see_reviews">Ver avaliações</string>
+    <string name="label_review_count">Número de avaliações: %1$d</string>
+    <string name="label_review_as">Avalia %1$s da %2$s</string>
+    <string name="hint_review_how_was_it">Como correu?</string>
+    <string name="hint_review_comment">Comentário (opcional)</string>
+    <string name="hint_review_placeholder">Deixa um comentário…</string>
+    <string name="error_load_pending_reviews">Não foi possível carregar as avaliações pendentes</string>
+    <string name="error_submit_review">Não foi possível submeter a avaliação</string>
+    <string name="success_completed">Concluído!</string>
+    <string name="success_approved">Aprovado</string>
+    <!--  ── Meeting Point ──  -->
+    <string name="screen_title_meeting_point_details">Detalhes do ponto de encontro</string>
+    <string name="btn_choose_meeting_point">Escolher este ponto de encontro</string>
+    <string name="btn_choose_pickup_point">Escolher este ponto de recolha</string>
+    <string name="btn_choose_point">Escolher este ponto</string>
+    <string name="label_chosen_schedule">Horário escolhido</string>
+    <string name="label_schedule">Horário</string>
+    <string name="label_select_time">Selecionar hora</string>
+    <string name="label_map">Mapa</string>
+    <string name="label_list">Lista</string>
+    <string name="label_my_location">A minha localização</string>
+    <string name="label_current_location">Localização atual</string>
+    <string name="label_my_location_alt">Minha localização</string>
+    <!--  ── Search ──  -->
+    <string name="placeholder_search_what">O que procuras?</string>
+    <string name="placeholder_search_ellipsis">Pesquisar…</string>
+    <!--  ── User Profile (public) ──  -->
+    <string name="error_load_user_profile">Não foi possível carregar este perfil</string>
+    <string name="empty_user_no_publications">Este utilizador ainda não tem publicações.</string>
+    <!--  ── Splash / General ──  -->
+    <string name="label_logo">Logo</string>
+    <string name="label_no_image">No image</string>
+    <string name="label_back_to_app">Voltar à aplicação</string>
+    <string name="label_user">Utilizador</string>
+    <string name="label_perfil">Perfil</string>
+    <string name="label_occur_error">Ocorreu um erro</string>
+    <!--  ── Error messages (various screens) ──  -->
+    <string name="error_load_categories">Não foi possível carregar as categorias</string>
+    <string name="error_load_publications">Não foi possível carregar as publicações</string>
+    <string name="error_load_universities">Não foi possível carregar as universidades</string>
+    <string name="error_load_profile_generic">Não foi possível carregar o perfil</string>
+    <string name="error_complete_purchase">Não foi possível concluir a compra</string>
+    <string name="error_complete_request">Não foi possível concluir o pedido</string>
+    <string name="error_delete_request">Não foi possível eliminar o pedido</string>
+    <string name="error_delete_item">Não foi possível eliminar: %1$s</string>
+    <string name="error_listing_not_found">Publicação não encontrada</string>
+    <string name="error_item_not_found">Artigo não encontrado</string>
+    <string name="error_no_sales">Não foi possível concluir a compra</string>
+    <!--  ── Offer Dialog ──  -->
+    <string name="dialog_title_offer">Fazer proposta</string>
+    <string name="btn_submit_offer">Propor</string>
+</resources>
