@@ -35,4 +35,3 @@ google-services.json
 
 # Node.js / Appium tests
 testes-appium/node_modules/
-testes-appium/package-lock.json
