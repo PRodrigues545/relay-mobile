@@ -25,6 +25,9 @@ async function criarDriver() {
             'appium:deviceName': process.env.DEVICE_NAME || 'Android Emulator',
             'appium:noReset': false,
             'appium:autoGrantPermissions': true,
+            'appium:uiautomator2ServerLaunchTimeout': 60000,
+            'appium:uiautomator2ServerInstallTimeout': 60000,
+            'appium:disableWindowAnimation': true,
             ...(APK
                 ? { 'appium:app': APK, 'appium:appWaitActivity': '*' }
                 : { 'appium:appPackage': 'ipca.api.relay', 'appium:appActivity': '.MainActivity' })
@@ -89,8 +92,10 @@ async function scroll(driver, direction = 'down', vezes = 1) {
 }
 
 async function screenshot(driver, nome) {
-    fs.mkdirSync('screenshots', { recursive: true });
-    await driver.saveScreenshot(`screenshots/${nome.replace(/[^a-z0-9]+/gi, '_').slice(0, 80)}.png`);
+    try {
+        fs.mkdirSync('screenshots', { recursive: true });
+        await driver.saveScreenshot(`screenshots/${nome.replace(/[^a-z0-9]+/gi, '_').slice(0, 80)}.png`);
+    } catch { /* sessão já morta: ignorar */ }
 }
 
 // ---------------------------------------------------------------- dados partilhados entre ficheiros
@@ -119,7 +124,18 @@ async function fazerLogin(driver, email, password) {
 // Login e espera pela Home (a barra inferior só existe com sessão iniciada)
 async function iniciarSessao(driver, user) {
     await fazerLogin(driver, user.email, user.password);
-    await esperarTexto(driver, 'Publish');
+    if (!(await visivel(porTexto(driver, 'Publish'), TIMEOUT))) {
+        throw new Error(`Login de ${user.email} falhou. Textos no ecrã: ${await textosVisiveis(driver)}`);
+    }
+}
+
+// Lista os textos visíveis (ajuda a perceber que erro a app está a mostrar)
+async function textosVisiveis(driver) {
+    const out = [];
+    for (const t of await driver.$$('android.widget.TextView')) {
+        try { const x = await t.getText(); if (x) out.push(x); } catch { /* ignorar */ }
+    }
+    return JSON.stringify(out);
 }
 
 // ---------------------------------------------------------------- recursos
@@ -155,23 +171,37 @@ async function escolherCategoria(driver, nome) {
 // r = { tipo: 'SELL'|'BORROW', titulo, categoria?, preco?, duracao?, zonas? }
 async function preencherFormulario(driver, r) {
     if (r.tipo === 'BORROW') await tocarTexto(driver, 'Borrow');
-    if (r.titulo) (await campos(driver))[0].setValue(r.titulo);
+    if (r.titulo) await (await campos(driver))[0].setValue(r.titulo);
     if (r.categoria) await escolherCategoria(driver, r.categoria);
     await esconderTeclado(driver);
-    await scroll(driver, 'down', 2);
-    const cs = await driver.$$('android.widget.EditText');
     if (r.tipo === 'BORROW') {
-        if (r.duracao) await cs[cs.length - 2].setValue(r.duracao);
-        if (r.zonas) await cs[cs.length - 1].setValue(r.zonas);
+        if (r.duracao) await preencherAposRotulo(driver, 'Maximum Duration:', r.duracao);
+        if (r.zonas) await preencherAposRotulo(driver, 'Zones:', r.zonas);
     } else if (r.preco !== undefined && r.preco !== '') {
-        await cs[cs.length - 1].setValue(String(r.preco));
+        await preencherAposRotulo(driver, 'Price:', String(r.preco));
+    }
+}
+
+// Faz scroll até ao rótulo, escreve no campo que vem a seguir e confirma o valor lido de volta
+async function preencherAposRotulo(driver, rotulo, valor) {
+    const campo = driver.$(`//android.widget.TextView[@text="${rotulo}"]/following::android.widget.EditText[1]`);
+    // o rótulo pode aparecer logo acima da barra inferior, com o campo ainda escondido: continuar a descer
+    for (let i = 0; i < 6 && !(await visivel(campo, 800)); i++) await scroll(driver, 'down', 1);
+    await campo.waitForDisplayed({ timeout: 5000 });
+    await campo.setValue(valor);
+    const lido = await campo.getText();
+    if (!String(lido).includes(valor)) {
+        throw new Error(`O campo "${rotulo}" ficou com "${lido}" em vez de "${valor}"`);
     }
 }
 
 async function tocarPublicar(driver) {
     await esconderTeclado(driver);
     await scroll(driver, 'up', 3);
-    await tocarBotao(driver, 'Publish');
+    const b = await botao(driver, 'Publish');
+    // o botão fica desativado enquanto as categorias estão a carregar
+    for (let i = 0; i < 15 && !(await b.isEnabled()); i++) await driver.pause(1000);
+    await b.click();
 }
 
 async function publicarRecurso(driver, r) {
@@ -179,7 +209,8 @@ async function publicarRecurso(driver, r) {
     await preencherFormulario(driver, r);
     await tocarPublicar(driver);
     // sucesso = o formulário fecha
-    await driver.$(`android=new UiSelector().text("Title:")`).waitForDisplayed({ reverse: true, timeout: 20000 });
+    const fechou = await desapareceu(porTexto(driver, 'Title:'), 20000);
+    if (!fechou) throw new Error(`Publicar "${r.titulo}" não fechou o formulário. Textos no ecrã: ${await textosVisiveis(driver)}`);
 }
 
 // ---------------------------------------------------------------- ponto de encontro / pagamento / datas
@@ -230,5 +261,5 @@ module.exports = {
     botao, tocarBotao, campos, esconderTeclado, scroll, screenshot, guardarDados, lerDados,
     iso, hojeMais, fazerLogin, iniciarSessao, irParaHome, abrirRecurso, abrirFormularioPublicar,
     preencherFormulario, tocarPublicar, publicarRecurso, escolherPontoEncontro, escolherPagamento,
-    escolherData, contarHistorico, USER1, USER2, TIMEOUT, PONTO_ENCONTRO, UNIVERSIDADE
+    escolherData, contarHistorico, textosVisiveis, USER1, USER2, TIMEOUT, PONTO_ENCONTRO, UNIVERSIDADE
 };
