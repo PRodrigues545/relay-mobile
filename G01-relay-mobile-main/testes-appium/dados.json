@@ -1,0 +1,17 @@
+{
+  "venda": [
+    "Livro 53413-1",
+    "Livro 53413-2",
+    "Livro 53413-3",
+    "Livro 53413-4",
+    "Livro 53413-5",
+    "Livro 53413-6"
+  ],
+  "emprestimo": [
+    "Calculadora 53413-1",
+    "Calculadora 53413-2",
+    "Calculadora 53413-3"
+  ],
+  "proprioVenda": "Livro Proprio 53413",
+  "proprioEmprestimo": "Calculadora Propria 53413"
+}

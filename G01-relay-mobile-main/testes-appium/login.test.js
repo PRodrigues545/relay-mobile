@@ -21,7 +21,7 @@ describe('RF01 - Fazer login', function () {
         await driver.deleteSession();
     });
 
-    // TC-LOG-01 | CA01.1 | Casos de Uso
+    // TC-LOG-01 | CA01.1 | Use Case Testing
     describe('TC-LOG-01 Login com credenciais válidas', function () {
         [['#1', h.USER1], ['#2', h.USER2]].forEach(([id, u]) => {
             it(`${id} ${u.email} acede à Home`, async function () {
@@ -31,7 +31,7 @@ describe('RF01 - Fazer login', function () {
         });
     });
 
-    // TC-LOG-02 | CA01.2 | Particionar por Equivalência
+    // TC-LOG-02 | CA01.2 | Equivalence Partitioning
     describe('TC-LOG-02 Password incorreta', function () {
         [['#1', 'aluno1@ipca.pt', 'errada123'], ['#2', 'aluno2@ipca.pt', 'abc']].forEach(([id, email, pass]) => {
             it(`${id} ${email} / ${pass} mostra erro e fica no login`, async function () {
@@ -42,7 +42,7 @@ describe('RF01 - Fazer login', function () {
         });
     });
 
-    // TC-LOG-03 | CA01.3 e CA01.4 | Tabela de Decisão
+    // TC-LOG-03 | CA01.3 e CA01.4 | Decision Table Testing
     describe('TC-LOG-03 Combinações de email e password', function () {
         const linhas = [
             ['#1', '', '', [E_EMAIL_OBRIG, E_PASS_OBRIG]],
@@ -65,7 +65,7 @@ describe('RF01 - Fazer login', function () {
         });
     });
 
-    // TC-LOG-04 | CA01.5 | Transição de Estados
+    // TC-LOG-04 | CA01.5 | State Transition Testing
     describe('TC-LOG-04 Mostrar/ocultar password', function () {
         it('o ícone alterna entre password oculta e visível', async function () {
             const c = await h.campos(driver);

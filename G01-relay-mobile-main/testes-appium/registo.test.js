@@ -32,26 +32,57 @@ describe('RF02 - Criar conta', function () {
         await h.tocarBotao(driver, 'Continue');
     }
 
+    async function textosNoEcra() {
+        const s = new Set();
+        for (const t of await driver.$$('android.widget.TextView')) {
+            try { s.add(await t.getText()); } catch { /* ignorar */ }
+        }
+        return s;
+    }
+
+    // Espera que apareça um texto que não estava no ecrã antes de abrir o dropdown (= 1.ª opção)
+    async function novaOpcao(antes, timeout) {
+        const fim = Date.now() + timeout;
+        while (Date.now() < fim) {
+            for (const t of await driver.$$('android.widget.TextView')) {
+                const txt = await t.getText().catch(() => '');
+                if (txt && !antes.has(txt)) return t;
+            }
+            await driver.pause(400);
+        }
+        return null;
+    }
+
+    // Abre um dropdown do passo 2. Toca no placeholder; se a lista não abrir,
+    // toca na seta à direita do campo (é a seta que tem o clique na app).
+    async function abrirDropdown(placeholder, antes) {
+        const campo = await h.scrollAteTexto(driver, placeholder);
+        await campo.click();
+        if (await novaOpcao(antes, 2500)) return;
+        const { y, height } = await campo.getElementRect(await campo.elementId);
+        const { width } = await driver.getWindowSize();
+        const px = (await driver.getDisplayDensity()) / 160; // dp -> px
+        await driver.execute('mobile: clickGesture', { x: Math.round(width - 40 * px), y: Math.round(y + height / 2) });
+    }
+
     // Escolhe uma opção de um dropdown do passo 2. Sem `texto`, escolhe a 1.ª opção da lista.
+    // O "antes" é lido ANTES de abrir a lista; lido depois, as opções já lá estariam e nunca seriam "novas".
     async function escolherDropdown(placeholder, texto) {
-        await h.tocarTexto(driver, placeholder);
+        await h.esconderTeclado(driver);
+        const antes = await textosNoEcra();
+        await abrirDropdown(placeholder, antes);
         if (texto) {
             const op = h.porTextoContem(driver, texto);
             await op.waitForDisplayed({ timeout: h.TIMEOUT });
             await op.click();
             return;
         }
-        const antes = new Set();
-        for (const t of await driver.$$('android.widget.TextView')) antes.add(await t.getText());
-        await driver.pause(800);
-        for (const t of await driver.$$('android.widget.TextView')) {
-            const txt = await t.getText();
-            if (txt && !antes.has(txt)) { await t.click(); return; }
-        }
-        throw new Error(`Sem opções no dropdown "${placeholder}"`);
+        const op = await novaOpcao(antes, h.TIMEOUT);
+        if (!op) throw new Error(`Sem opções no dropdown "${placeholder}"`);
+        await op.click();
     }
 
-    // TC-REG-01 | CA02.3 e CA02.5 | Casos de Uso
+    // TC-REG-01 | CA02.3 e CA02.5 | Use Case Testing
     it('TC-REG-01 #1 registo completo com sucesso', async function () {
         await passo1({ email: `novo1_${suf}@ipca.pt`, password: 'Teste1234', confirmacao: 'Teste1234', username: `ped${suf}a` });
         await h.esperarTexto(driver, SUBTITULO_PASSO2);
@@ -59,12 +90,14 @@ describe('RF02 - Criar conta', function () {
         await c[0].setValue('Aluno Teste');
         await h.esconderTeclado(driver);
         await escolherDropdown('Select your university', h.UNIVERSIDADE);
+        // CA02.3: os cursos só aparecem depois de escolher a universidade
+        await h.esperarTexto(driver, 'Select your course');
         await escolherDropdown('Select your course', null);
-        await h.tocarBotao(driver, 'Register');
+        await h.tocarBotaoComScroll(driver, 'Register'); // o botão pode estar abaixo do fim do ecrã
         await h.esperarTexto(driver, 'Publish', 20000); // Home com sessão iniciada
     });
 
-    // TC-REG-02 | CA02.1 | Análise de Valor Fronteira
+    // TC-REG-02 | CA02.1 | Boundary Value Analysis
     describe('TC-REG-02 Validação do passo 1', function () {
         const linhas = [
             ['#1', 'pedro@', 'Teste1234', 'Teste1234', 'pedro01', 'Invalid email'],
@@ -87,19 +120,19 @@ describe('RF02 - Criar conta', function () {
         });
     });
 
-    // TC-REG-03 | CA02.2 | Transição de Estados
+    // TC-REG-03 | CA02.2 | State Transition Testing
     it('TC-REG-03 #1 passo 2 vazio + Skip cria a conta', async function () {
         await passo1({ email: `novo2_${suf}@ipca.pt`, password: 'Teste1234', confirmacao: 'Teste1234', username: `ped${suf}b` });
         await h.esperarTexto(driver, SUBTITULO_PASSO2);
-        await h.tocarBotao(driver, 'Skip');
+        await h.tocarBotaoComScroll(driver, 'Skip');
         await h.esperarTexto(driver, 'Publish', 20000);
     });
 
-    // TC-REG-04 | CA02.4 | (sem técnica)
+    // TC-REG-04 | CA02.4 | Equivalence Partitioning
     it('TC-REG-04 #1 email já registado', async function () {
         await passo1({ email: 'aluno1@ipca.pt', password: 'Teste1234', confirmacao: 'Teste1234', username: `ped${suf}c` });
         await h.esperarTexto(driver, SUBTITULO_PASSO2);
-        await h.tocarBotao(driver, 'Skip');
+        await h.tocarBotaoComScroll(driver, 'Skip');
         assert.ok(await h.visivel(h.porTexto(driver, 'Email already in use'), 15000), 'devia mostrar "Email already in use"');
         assert.ok(!(await h.visivel(h.porTexto(driver, 'Publish'), 1500)), 'a conta não devia ser criada');
     });

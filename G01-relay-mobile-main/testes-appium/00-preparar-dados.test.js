@@ -1,11 +1,14 @@
-// Cria os recursos de que os testes de compra e empréstimo precisam.
-// Corre PRIMEIRO (nome 00-...). Os títulos levam um sufixo único para cada execução,
-// porque uma compra/pedido "gasta" o recurso. Os títulos ficam em dados.json.
+// Cria, pela API, os recursos de que os testes de compra e empréstimo precisam.
+// Não usa a interface: os dados de preparação não devem depender do ecrã de publicar,
+// que é ele próprio testado em publicar.test.js.
+// Os títulos levam um sufixo único em cada execução, porque uma compra/pedido "gasta" o recurso.
+// Os títulos ficam em dados.json.
+const assert = require('assert');
 const h = require('./helpers');
+const api = require('./api');
 
-describe('Preparação dos dados de teste', function () {
-    this.timeout(900000);
-    let driver;
+describe('Preparação dos dados de teste (via API)', function () {
+    this.timeout(120000);
     const suf = String(Date.now()).slice(-5);
     const dados = {
         venda: [1, 2, 3, 4, 5, 6].map((i) => `Livro ${suf}-${i}`),
@@ -14,24 +17,23 @@ describe('Preparação dos dados de teste', function () {
         proprioEmprestimo: `Calculadora Propria ${suf}`
     };
 
-    beforeEach(async () => { driver = await h.criarDriver(); await h.esperarTexto(driver, 'Forgot password?'); });
-    afterEach(async function () {
-        if (this.currentTest.state === 'failed') await h.screenshot(driver, this.currentTest.title);
-        await driver.deleteSession();
-    });
-
     it('aluno2 publica os recursos de outro utilizador (venda e empréstimo)', async () => {
-        await h.iniciarSessao(driver, h.USER2);
-        for (const titulo of dados.venda) await h.publicarRecurso(driver, { tipo: 'SELL', titulo, preco: '12.50' });
+        for (const titulo of dados.venda) await api.criarRecurso(h.USER2, { tipo: 'SELL', titulo, preco: 12.5 });
         for (const titulo of dados.emprestimo) {
-            await h.publicarRecurso(driver, { tipo: 'BORROW', titulo, duracao: '1 semestre', zonas: 'Campus IPCA' });
+            await api.criarRecurso(h.USER2, { tipo: 'BORROW', titulo, duracao: '1 semestre', zonas: 'Campus IPCA' });
         }
     });
 
     it('aluno1 publica os seus próprios recursos', async () => {
-        await h.iniciarSessao(driver, h.USER1);
-        await h.publicarRecurso(driver, { tipo: 'SELL', titulo: dados.proprioVenda, preco: '5' });
-        await h.publicarRecurso(driver, { tipo: 'BORROW', titulo: dados.proprioEmprestimo, duracao: '1 semestre', zonas: 'Campus IPCA' });
+        await api.criarRecurso(h.USER1, { tipo: 'SELL', titulo: dados.proprioVenda, preco: 5 });
+        await api.criarRecurso(h.USER1, { tipo: 'BORROW', titulo: dados.proprioEmprestimo, duracao: '1 semestre', zonas: 'Campus IPCA' });
+    });
+
+    it('os recursos existem no servidor', async () => {
+        const titulos = new Set((await api.todosRecursos(h.USER1)).map((r) => r.title));
+        const todos = [...dados.venda, ...dados.emprestimo, dados.proprioVenda, dados.proprioEmprestimo];
+        const faltam = todos.filter((t) => !titulos.has(t));
+        assert.deepStrictEqual(faltam, [], `recursos em falta: ${faltam.join(', ')}`);
         h.guardarDados(dados);
     });
 });
