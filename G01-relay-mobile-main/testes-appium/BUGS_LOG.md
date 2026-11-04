@@ -6,6 +6,8 @@ Este documento regista os defeitos encontrados pelos testes automáticos. Para c
 | ID | Título | Requisito / Teste | Severidade | Estado |
 |----|--------|-------------------|------------|--------|
 | BUG-001 | Login com credenciais erradas devolve 500 e mostra erro genérico | RF01 / TC-LOG-02 | Média | Aberto |
+| BUG-002 | Ecrã Publish não consegue sair: não fecha depois de publicar e a seta ← não funciona | RF03 / TC-PUB-01 #1, #2; TC-PUB-03 #1 | Alta | Aberto (causa confirmada: pilha de navegação) |
+| BUG-003 | Duplo toque em "Buy" cria duas compras do mesmo recurso (a 2.ª fica "falhada") | RF04 / TC-COM-04 #1 | Média | Aberto (intermitente, 3/4 + manual) |
 
 ---
 
@@ -101,6 +103,211 @@ Nota de segurança: a mensagem atual "There is no user with this email" revela q
    ```
    Esperado: `HTTP/1.1 401` com `{"message":"Invalid email or password"}`.
 2. `npm run test:login`: o TC-LOG-02 #1 e #2 devem passar, e o TC-LOG-01, TC-LOG-03 e TC-LOG-04 devem continuar a passar.
+
+---
+
+## BUG-002 — Ecrã Publish não consegue sair: não fecha depois de publicar e a seta ← não funciona
+
+| Campo | Valor |
+|-------|-------|
+| **Data** | 2026-10-30 |
+| **Requisito** | RF03 — Publicar recurso (CA03.3, CA03.4) |
+| **Casos de teste** | TC-PUB-01 #1 (preço 12.50), TC-PUB-01 #2 (preço 0.01), TC-PUB-03 #1 (empréstimo) |
+| **Técnica** | Análise de Valor Fronteira / Particionar por Equivalência |
+| **Componente** | App Android: navegação da barra inferior (`presentation/MainScreen.kt`) + `presentation/create/CreateResourceScreen.kt` / `CreateResourceViewModel.kt` |
+| **Severidade** | Alta: o recurso fica publicado, mas o utilizador não sabe. É provável que volte a carregar em Publish e crie **duplicados** |
+| **Prioridade** | Alta |
+| **Estado** | Aberto. Causa confirmada por testes manuais: a navegação da barra inferior (`MainScreen.kt`) constrói mal a pilha de navegação |
+
+### Reprodutibilidade
+- **Testes automáticos:** 3 em 3 execuções falharam. Cada sessão do Appium começa com a app limpa (`noReset: false`).
+- **Testes manuais (2026-10-30):**
+  1. 1.ª tentativa: o formulário não fechou e ficou com os dados preenchidos.
+  2. 2.ª tentativa, depois de eliminar as publicações criadas: o formulário fechou corretamente.
+  3. 3.ª tentativa: o formulário não fechou. Depois de eliminar as publicações, uma nova publicação **não fechou o formulário, mas limpou-o** (campos vazios). As tentativas seguintes voltaram a falhar.
+  4. Tentativas seguintes: o defeito reproduz-se sempre. Não voltou a acontecer o formulário fechar nem limpar.
+- **Comportamento enquanto o formulário está "preso":** a seta ← do topo **não faz nada** e o separador **Borrow não muda**. Os separadores da barra inferior (por exemplo, Profile) continuam a funcionar.
+- **Reprodução sem publicar nada (2026-10-30):** abrir o separador Publish e, com o formulário **vazio**, tocar na seta ← do topo. **Não acontece nada.** O defeito não depende do servidor nem da publicação: o `popBackStack()` deste ecrã não tem para onde voltar. Depois de publicar, o fecho usa o mesmo `popBackStack()` e falha da mesma maneira.
+- **Dependência do percurso (2026-10-30):** Home → Publish → Borrow → seta ←: o formulário **bloqueia** (seta, campos de texto, dropdowns e imagem deixam de funcionar; os dropdowns abrem, mas o valor escolhido não fica). Home → Profile → Home → Publish → seta ←: **funciona**, mas volta ao **Profile** e não à Home.
+- **Ambientes:** emulador Android 9.0 (API 28) e telemóvel Android 15. O comportamento é igual nos dois, por isso não depende da versão do Android.
+- Conclusão: o ecrã Publish fica **inativo**. Continua visível mas já não responde, o que aponta para um problema de navegação e não para os dados publicados.
+
+### Passos para reproduzir
+**Reprodução mínima (sem servidor):**
+1. Iniciar sessão.
+2. Tocar em **Publish** (barra inferior).
+3. Sem preencher nada, tocar na seta ← do topo. Resultado: não acontece nada (esperado: voltar à Home).
+
+**Reprodução pelo caso de teste:**
+1. Iniciar sessão como `aluno2@ipca.pt`.
+2. Tocar em **Publish** (barra inferior).
+3. Preencher o título (`Livro de Cálculo <sufixo>`), escolher **Sell** e preço `12.50`. A categoria fica com a 1.ª por omissão.
+4. Tocar em **Publish** (topo do formulário).
+
+O mesmo acontece com o preço `0.01` e com **Borrow**, duração `1 semestre` e zonas `Campus IPCA`.
+
+### Resultado esperado
+- O recurso é criado no servidor.
+- O formulário fecha (volta ao ecrã anterior), como em `LaunchedEffect(uiState.isSuccess) { navController.popBackStack() }`.
+
+### Resultado obtido
+- O recurso **é criado** no servidor. O teste confirma-o pela API (`api.procurarRecurso`). ✔
+- O formulário **continua aberto** após 15 s, com os dados preenchidos. ✘
+- **Não aparece nenhuma mensagem de erro**: no dump não há texto vermelho entre "Select Image" e "Title:", onde a app mostra `uiState.error`. ✘
+- O botão Publish voltou ao estado normal (texto "Publish", sem spinner). O pedido já terminou.
+
+Evidência:
+- Mocha: `o recurso foi criado mas o formulário não fechou: defeito na app (formulário ficou aberto, recurso CRIADO no servidor)` (`publicar.test.js:39`), nos 3 casos.
+- Dumps: `_1_pre_o_12_50_publicado.xml`, `_2_pre_o_0_01_publicado_limite_inferior_v_lido_.xml` e `TC_PUB_03_1_empr_stimo_sem_pre_o_com_dura_o_e_zonas.xml` mostram "Publish Item" com o título preenchido e sem erro.
+- Os casos em que a app **rejeita** antes de chamar o servidor (TC-PUB-01 #3–#5, TC-PUB-02) passam. O problema só aparece quando o pedido chega ao servidor e tem sucesso.
+
+### Análise da causa
+
+**Causa confirmada (testes manuais de 2026-10-30).** A pilha de navegação depende dos separadores visitados antes, e a Home é removida dela:
+
+| Sequência | Pilha resultante (simplificada) | Seta ← no Publish |
+|-----------|---------------------------------|-------------------|
+| Home → Publish | `[CreateResource]`: a Home foi removida | **Bloqueia** (não há ecrã por baixo; fica o "ecrã fantasma") |
+| Home → Profile → Home → Publish | `[Profile, CreateResource]` | Funciona, mas **volta ao Profile** em vez da Home |
+
+Porquê, no `MainScreen.kt`: `popUpTo(bottomNavController.graph.startDestinationId)` aponta para o **grafo** `HomeGraph`, não para o ecrã Home.
+- Quando o `HomeGraph` está na pilha, o `popUpTo` remove tudo o que está por cima dele, **incluindo o ecrã Home**. O grafo, sem ecrã, é depois descartado pela navegação.
+- Quando o `HomeGraph` já não está na pilha, o `popUpTo` **não encontra nada e não remove nada**. Os separadores anteriores (por exemplo, Profile) ficam acumulados.
+- Resultado: a Home nunca fica na base da pilha. Às vezes não há nada por baixo do Publish, e outras vezes está lá o separador errado.
+
+O comportamento do formulário bloqueado também bate com isto. Os dropdowns abrem porque usam estado local do ecrã (`remember`). Os campos não guardam o texto porque dependem do ViewModel, e o ecrã já não está ativo (`collectAsStateWithLifecycle` parou).
+
+**0. O ecrã "preso" já não está ativo na navegação ("ecrã fantasma").**
+- O separador **Borrow** chama `viewModel.onTypeChange("BORROW")`. O ecrã lê o estado com `collectAsStateWithLifecycle()`, que **só atualiza enquanto o ecrã está ativo** (lifecycle STARTED). Se o Borrow não muda, o ecrã já não está ativo.
+- A seta ← chama `navController.popBackStack()`. Se não faz nada, a entrada do ecrã Publish **já não está na pilha de navegação**, ou não há nada para onde voltar.
+- A barra inferior continua a funcionar porque pertence ao `MainScreen`, que continua ativo.
+- Conclusão: depois de publicar, o `isSuccess` passou a `true` e o `popBackStack()` **correu e removeu o ecrã Publish da pilha**. Por baixo, porém, não havia nenhum ecrã para mostrar. O `NavHost` continuou a mostrar a última imagem do formulário, que já não responde a nada.
+
+**1. O formulário limpo prova que a publicação teve sucesso na app e que houve navegação.**
+Em `CreateResourceViewModel.kt`, nada volta a pôr os campos vazios. Não há nenhum reset depois do sucesso. Os campos só estão vazios quando o ViewModel é **novo** (`MutableStateFlow(CreateResourceUiState())`, linha 16). Um ViewModel novo só aparece com uma **nova entrada de navegação** do ecrã Publish.
+Logo, na 3.ª tentativa manual: `isSuccess` passou a `true`, o `popBackStack()` correu, e o utilizador **voltou a cair noutro ecrã Publish** em vez de voltar à Home.
+Isto afasta a hipótese de uma exceção depois da resposta do servidor. Há mais um argumento contra essa hipótese: a Home usa o mesmo `ResourceDTO`, o mesmo `toDomain()` e a mesma cache Room, e funciona.
+
+**2. Causa mais provável: navegação da barra inferior** (`presentation/MainScreen.kt`, linhas 47–54):
+```kotlin
+bottomNavController.navigate(route) {
+    popUpTo(bottomNavController.graph.startDestinationId) {   // ← HomeGraph (grafo aninhado)
+        inclusive = false
+        saveState = true
+    }
+    launchSingleTop = true
+    restoreState = true
+}
+```
+- Cada separador é um **grafo aninhado** (`HomeGraph`, `CreateGraph`, `ProfileGraph`…). Por isso, `graph.startDestinationId` é o id do grafo `HomeGraph` e não do ecrã Home. O padrão documentado pela Google para grafos aninhados é `popUpTo(navController.graph.findStartDestination().id)`. Com o id do grafo, a pilha de navegação pode ficar num estado inconsistente.
+- `saveState = true` + `restoreState = true` guardam e **restauram** a pilha de cada separador, incluindo os ViewModels. Ao andar entre separadores (por exemplo, Profile para eliminar publicações e depois Publish outra vez), podem ser restauradas entradas antigas do ecrã Publish. O `popBackStack()` revela então essas entradas em vez da Home.
+- Isto explica a intermitência. O resultado depende dos separadores visitados antes, o que bate com as diferenças entre as tentativas manuais.
+- Ligação ao ponto 0: o `popUpTo(<id do grafo HomeGraph>)` com `inclusive = false` remove da pilha o **ecrã Home** e deixa só a entrada do **grafo** `HomeGraph`, que não tem ecrã próprio. Quando o Publish sai da pilha, o topo passa a ser esse grafo vazio. Não há ecrã para mostrar, e fica o "ecrã fantasma".
+
+**3. Defeitos de código que agravam o problema:**
+- `isSuccess` **nunca volta a `false`**. Se um ViewModel com `isSuccess = true` for restaurado (ponto 2), o `LaunchedEffect` volta a disparar `popBackStack()` assim que o ecrã aparece.
+- **Falha silenciosa** no `catch` do `submit()`: `error = e.localizedMessage` pode ser `null`, e então nenhuma mensagem aparece. Não há `Log`. Não é a causa deste caso, mas esconde qualquer outra falha.
+- **Não há mensagem de sucesso.** O único sinal de que a publicação correu bem é o ecrã fechar. Quando a navegação falha, o utilizador fica sem nenhuma indicação.
+
+### Diagnóstico (feito)
+Os passos abaixo foram usados para confirmar a causa. Ficam como registo.
+
+1. **Seta de voltar (feito, 2026-10-30):** com o formulário preso, a seta ← não faz nada e o separador Borrow não muda. Confirma que o ecrã está inativo (ponto 0).
+2. **Separador destacado na barra inferior.** Com o formulário preso, ver qual dos ícones está destacado (círculo roxo). A previsão é que esteja destacado o **Home** e não o Publish. A seguir, tocar em **Home**: a previsão é que **não aconteça nada**, porque a app acha que já está no Home. Tocar em **Profile** deve funcionar.
+   Se isto se confirmar, fica provado que, para a app, o ecrã atual é o grafo `HomeGraph` vazio (ponto 2).
+3. **Sequência controlada:** limpar os dados (`adb shell pm clear ipca.api.relay`), fazer login e publicar **diretamente a partir da Home**. Repetir mas passando antes por **Profile** e depois **Publish**. Anotar em que sequência falha.
+4. **Logcat** (confirma que o servidor respondeu 201 e que não houve exceção):
+   ```powershell
+   adb logcat -c
+   # reproduzir o defeito
+   adb logcat -d | Select-String -Pattern "okhttp|AndroidRuntime|Exception"
+   ```
+
+### Correção proposta (não aplicada)
+0. **Navegação (causa provável).** Em `MainScreen.kt`, usar o padrão documentado para grafos aninhados:
+   ```kotlin
+   import androidx.navigation.NavGraph.Companion.findStartDestination
+   ...
+   popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
+   ```
+   Depois de publicar, navegar explicitamente para a Home (ou para o detalhe do recurso) em vez de depender do `popBackStack()`. Repor `isSuccess = false` logo a seguir, para não ficar estado antigo no ViewModel.
+1. **Nunca falhar em silêncio.** No `catch`, mostrar sempre uma mensagem e registar a exceção:
+   ```kotlin
+   } catch (e: Exception) {
+       Log.e("CreateResourceVM", "submit failed", e)
+       _uiState.update { it.copy(isLoading = false, error = e.localizedMessage ?: "Could not publish the item") }
+   }
+   ```
+2. **Separar o sucesso no servidor dos passos opcionais.** Quando o `api.createResource` devolve 2xx, o recurso está publicado. O upload da imagem, a conversão e a cache não devem impedir que `isSuccess = true`. Coloca-os num `try/catch` próprio dentro do `addResource`, ou corre-os depois de marcar o sucesso.
+3. Mostrar uma confirmação de sucesso (por exemplo, um Snackbar "Item published"), para o utilizador não depender só de o ecrã fechar.
+
+Nota: o `OkHttpClient` tem `retryOnConnectionFailure(true)`. Com o túnel ngrok, um POST pode ser repetido automaticamente se a ligação cair, o que também pode gerar duplicados. Convém ter isto em conta na análise.
+
+### Verificação após correção
+1. `npm run test:publicar`: TC-PUB-01 #1, #2 e TC-PUB-03 #1 devem passar (o formulário fecha e o recurso fica criado).
+2. Os testes que já passavam (TC-PUB-01 #3–#5, TC-PUB-02 #1–#3) devem continuar a passar.
+3. Confirmar na API que **só existe um** recurso com cada título (sem duplicados).
+
+---
+
+## BUG-003 — Duplo toque em "Buy" cria duas compras do mesmo recurso (a 2.ª fica "falhada")
+
+| Campo | Valor |
+|-------|-------|
+| **Data** | 2026-11-02 |
+| **Requisito** | RF04 — Comprar (CA04.5) |
+| **Caso de teste** | TC-COM-04 #1 duplo toque em Buy cria uma única compra |
+| **Técnica** | Transição de Estados |
+| **Componente** | App Android: `presentation/purchase/PurchaseViewModel.kt` / `PurchaseUiState.kt`. Backend: `operation-service` (`purchasesController.createPurchase`, `purchasesService.createPurchaseReq`) |
+| **Severidade** | Média: não há venda dupla, porque a 2.ª compra é rejeitada mais tarde. Mas fica um registo de compra **falhada** no histórico, o utilizador fica confuso, e é feito um pedido desnecessário ao servidor (com Bank Transfer, possivelmente também ao Stripe) |
+| **Prioridade** | Alta |
+| **Estado** | Aberto. O sintoma está confirmado. A causa provável está identificada no código e falta confirmá-la à mão |
+
+### Passos para reproduzir
+1. Iniciar sessão como `aluno1@ipca.pt`.
+2. Abrir um recurso à venda do `aluno2` e tocar em **Buy now**.
+3. Escolher o ponto de encontro e o pagamento **Cash Payment**.
+4. Tocar **duas vezes seguidas** em **Buy**.
+5. Abrir Profile → History → Purchases.
+
+### Resultado esperado
+É criada **uma** compra.
+
+### Resultado obtido
+São criadas **duas** compras. O teste conta as compras no histórico antes e depois: `2 !== 1`.
+
+### Reprodutibilidade
+- 2026-11-02: falhou (`2 !== 1`).
+- 2026-11-03: falhou outra vez da mesma forma (`2 !== 1`; compra #362 criada às 14:45), já com os helpers do teste corrigidos. O defeito é **reproduzível** (2 em 2 execuções).
+- 2026-11-03, teste manual: é possível tocar duas vezes em Buy. A 2.ª compra é criada e aparece no histórico com estado **falhado**. Não há venda dupla, mas fica uma compra falhada registada.
+- 2026-11-04 (1.ª execução): falhou (`2 !== 1`).
+- 2026-11-04 (2.ª execução): **passou**. Nesta execução a app respondeu muito mais depressa (Cash Payment em ~9 s em vez de ~27 s), e o 2.º toque chegou depois de a app já ter mudado de ecrã.
+- Conclusão: o defeito é **dependente do tempo** (*race condition*). Falhou em 3 de 4 execuções automáticas e foi confirmado à mão. Só acontece quando o 2.º toque chega antes de a app mudar de ecrã, por isso uma execução sem falha **não** significa que esteja corrigido. O defeito continua aberto.
+
+### Análise da causa
+**App:** `canSubmit = !isSubmitting && selectedMeetingPoint != null && selectedPaymentMethod != null`. No `onSubmit()`, quando a compra é criada com sucesso, o estado passa a `isSubmitting = false`. O ponto de encontro e o pagamento continuam selecionados, por isso o **botão Buy volta a ficar ativo** durante o intervalo entre a resposta do servidor e a navegação para o ecrã seguinte. Um segundo toque nesse intervalo cria outra compra.
+
+**Backend:** `createPurchase` insere sempre uma compra nova (`insertInto('purchases')`). Não verifica se o mesmo comprador já tem uma compra ativa para o mesmo recurso, e a disponibilidade só é confirmada mais tarde, de forma assíncrona (fila de mensagens). O servidor aceita por isso dois pedidos iguais seguidos.
+Isto explica o que se vê no teste manual: a 2.ª compra é **criada**, e só depois a verificação assíncrona descobre que o recurso já está reservado e marca-a como **falhada**. A proteção existe, mas atua tarde demais. A compra inválida já ficou registada.
+
+**Risco a confirmar (Bank Transfer):** no `createPurchase`, o `PaymentIntent` do Stripe é criado **antes** da verificação de disponibilidade. Um duplo toque com Bank Transfer pode por isso criar dois `PaymentIntent`. Para confirmar, repetir o duplo toque com Bank Transfer e ver no painel do Stripe (modo de teste) quantos pagamentos aparecem.
+
+### Diagnóstico (para confirmar)
+- Manual: repetir os passos acima e ver se aparecem duas compras no histórico.
+- Logcat: a app regista cada compra criada (`Log.d("PURCHASE", ...)`). Dois registos `dto:` no mesmo ensaio confirmam dois pedidos POST.
+  ```powershell
+  adb logcat -c
+  # reproduzir
+  adb logcat -d | Select-String "PURCHASE"
+  ```
+
+### Correção proposta (não aplicada)
+1. **App:** depois do sucesso, manter o botão desativado. Por exemplo, `canSubmit` também exige `createdPurchaseId == null`, ou o `isSubmitting` só volta a `false` em caso de erro.
+2. **Backend:** rejeitar (por exemplo, com `409 Conflict`) uma nova compra quando já existe uma compra ativa do mesmo comprador para o mesmo recurso, ou quando o recurso já não está disponível. A verificação deve ser feita na mesma transação que a inserção.
+
+### Verificação após correção
+1. `npm run test:comprar`: o TC-COM-04 #1 deve passar (exatamente 1 compra nova).
+2. Confirmar à mão que um duplo toque cria só uma compra.
 
 ---
 

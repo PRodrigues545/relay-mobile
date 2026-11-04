@@ -63,9 +63,9 @@ async function tocarTexto(driver, texto) {
 // Devolvemos o elemento pai (o próprio botão): é nele que estão o "enabled" e o clique.
 // Usar o TextView daria sempre isEnabled() = true, mesmo com o botão desativado.
 async function botao(driver, texto) {
-    const b = driver.$(`android=new UiSelector().className("android.widget.Button").text("${texto}")`);
-    if (await visivel(b, 1000)) return b;
-    return botaoDoTexto(await esperarTexto(driver, texto));
+    const b = driver.$(`//android.widget.TextView[@text="${texto}"]/ancestor::*[@clickable="true"][1]`);
+    await b.waitForDisplayed({ timeout: TIMEOUT });
+    return b;
 }
 
 async function botaoDoTexto(textView) {
@@ -181,7 +181,10 @@ async function abrirRecurso(driver, titulo) {
     const c = await campos(driver);
     await c[0].setValue(titulo);
     await esconderTeclado(driver);
-    await tocarTexto(driver, titulo);
+    // tocar no cartão do resultado (TextView), não no campo de pesquisa (EditText), que tem o mesmo texto
+    const cartao = driver.$(`//android.widget.TextView[@text="${titulo}"]`);
+    await cartao.waitForDisplayed({ timeout: TIMEOUT });
+    await cartao.click();
     await esperarTexto(driver, 'Details');
 }
 
@@ -303,12 +306,23 @@ async function escolherPontoEncontro(driver, nome = PONTO_ENCONTRO) {
     await ponto.waitForDisplayed({ timeout: TIMEOUT });
     await ponto.click();
     await tocarBotao(driver, 'Select this meeting place');
+    await tocarBotao(driver, 'Select this pickup location');
+    await tocarBotao(driver, 'Back to App');
+    await esperarTexto(driver, 'Buy');   // confirmar que voltou ao ecrã de compra antes de continuar
 }
 
 async function escolherPagamento(driver, metodo) { // 'Cash Payment' | 'MBWAY' | 'Bank Transfer'
     await tocarTexto(driver, 'Choose a payment method');
     await tocarTexto(driver, metodo);
     await tocarBotao(driver, 'Confirm');
+}
+
+// O DatePicker do Material 3 expõe cada dia com a data completa ("Friday, November 6, 2026"), não só o número
+const MESES_EN = ['January', 'February', 'March', 'April', 'May', 'June',
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+function porDia(driver, d) {
+    const txt = `${MESES_EN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;   // "November 6, 2026"
+    return driver.$(`android=new UiSelector().className("android.widget.TextView").textContains("${txt}")`);
 }
 
 // Abre o seletor de datas ao tocar em `textoCampo` e devolve o elemento do dia hoje + dias
@@ -319,7 +333,7 @@ async function abrirDia(driver, textoCampo, dias) {
     let meses = (alvo.getFullYear() - hoje.getFullYear()) * 12 + (alvo.getMonth() - hoje.getMonth());
     while (meses > 0) { await porDesc(driver, 'Change to next month').click(); meses--; }
     while (meses < 0) { await porDesc(driver, 'Change to previous month').click(); meses++; }
-    const dia = porTexto(driver, String(alvo.getDate()));
+    const dia = porDia(driver, alvo);
     await dia.waitForDisplayed({ timeout: TIMEOUT });
     return botaoDoTexto(dia); // o "enabled" do dia está no elemento pai, tal como nos botões
 }
