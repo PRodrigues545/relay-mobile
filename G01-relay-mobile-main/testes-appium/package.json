@@ -12,7 +12,8 @@
     "test:comprar": "mocha comprar.test.js --timeout 180000",
     "test:emprestimo": "mocha emprestimo.test.js --timeout 180000",
     "limpar": "node limpar.js",
-    "limpar:apagar": "node limpar.js --apagar"
+    "limpar:apagar": "node limpar.js --apagar",
+    "test:ordem": "node run-ordem.js"
   },
   "dependencies": {
     "webdriverio": "^9.32.0"

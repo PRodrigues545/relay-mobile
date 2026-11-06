@@ -1,17 +1,17 @@
 {
   "venda": [
-    "Livro 30721-1",
-    "Livro 30721-2",
-    "Livro 30721-3",
-    "Livro 30721-4",
-    "Livro 30721-5",
-    "Livro 30721-6"
+    "Livro 83073-1",
+    "Livro 83073-2",
+    "Livro 83073-3",
+    "Livro 83073-4",
+    "Livro 83073-5",
+    "Livro 83073-6"
   ],
   "emprestimo": [
-    "Calculadora 30721-1",
-    "Calculadora 30721-2",
-    "Calculadora 30721-3"
+    "Calculadora 83073-1",
+    "Calculadora 83073-2",
+    "Calculadora 83073-3"
   ],
-  "proprioVenda": "Livro Proprio 30721",
-  "proprioEmprestimo": "Calculadora Propria 30721"
+  "proprioVenda": "Livro Proprio 83073",
+  "proprioEmprestimo": "Calculadora Propria 83073"
 }
