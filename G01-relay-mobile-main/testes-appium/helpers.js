@@ -308,7 +308,8 @@ async function escolherPontoEncontro(driver, nome = PONTO_ENCONTRO) {
     await tocarBotao(driver, 'Select this meeting place');
     await tocarBotao(driver, 'Select this pickup location');
     await tocarBotao(driver, 'Back to App');
-    await esperarTexto(driver, 'Buy');   // confirmar que voltou ao ecrã de compra antes de continuar
+    // voltou ao formulário: o rótulo "Meeting Point" existe no ecrã de compra e no de empréstimo
+    await esperarTexto(driver, 'Meeting Point');
 }
 
 async function escolherPagamento(driver, metodo) { // 'Cash Payment' | 'MBWAY' | 'Bank Transfer'

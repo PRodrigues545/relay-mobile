@@ -6,8 +6,28 @@ Este documento regista os defeitos encontrados pelos testes automáticos. Para c
 | ID | Título | Requisito / Teste | Severidade | Estado |
 |----|--------|-------------------|------------|--------|
 | BUG-001 | Login com credenciais erradas devolve 500 e mostra erro genérico | RF01 / TC-LOG-02 | Média | Aberto |
-| BUG-002 | Ecrã Publish não consegue sair: não fecha depois de publicar e a seta ← não funciona | RF03 / TC-PUB-01 #1, #2; TC-PUB-03 #1 | Alta | Aberto (causa confirmada: pilha de navegação) |
+| BUG-002 | Ecrã Publish não consegue sair: não fecha depois de publicar, a seta ← não funciona e o Back do sistema fecha a app | RF03 / TC-PUB-01 #1, #2; TC-PUB-03 #1 | Alta | Aberto (causa confirmada: pilha de navegação) |
 | BUG-003 | Duplo toque em "Buy" cria duas compras do mesmo recurso (a 2.ª fica "falhada") | RF04 / TC-COM-04 #1 | Média | Aberto (intermitente, 3/4 + manual) |
+| BUG-004 | Pedido de empréstimo aceita data de início no passado | RF05 / TC-EMP-03 #1 | Média | Aberto (causa confirmada no código) |
+
+---
+
+## Execução final (2026-11-06, `npm run test`)
+
+**51 testes: 45 passaram, 6 falharam.** Todas as falhas correspondem a defeitos registados.
+
+| Requisito | Ficheiro | Passaram | Falharam | Defeito |
+|-----------|----------|----------|----------|---------|
+| RF01 Fazer login | `login.test.js` | 8 | 2 (TC-LOG-02 #1, #2) | BUG-001 |
+| RF02 Criar conta | `registo.test.js` | 9 | 0 | — |
+| RF03 Publicar recurso | `publicar.test.js` | 6 | 3 (TC-PUB-01 #1, #2; TC-PUB-03 #1) | BUG-002 |
+| RF04 Comprar | `comprar.test.js` | 10 | 0 | BUG-003 (intermitente: o TC-COM-04 passou nesta execução) |
+| RF05 Pedir emprestado | `emprestimo.test.js` | 9 | 1 (TC-EMP-03 #1) | BUG-004 |
+| Preparação de dados | `00-preparar-dados.test.js` | 3 | 0 | — |
+
+Notas:
+- O BUG-003 é dependente do tempo de resposta. O TC-COM-04 passou aqui, mas o defeito já foi reproduzido em 3 de 4 execuções anteriores e confirmado à mão, por isso continua aberto.
+- O TC-EMP-04 #1 (duplo toque em "Submit Request") passou. O `BorrowViewModel` usa o mesmo padrão do BUG-003, por isso recomenda-se repetir à mão antes de concluir que o empréstimo está livre do defeito.
 
 ---
 
@@ -106,7 +126,7 @@ Nota de segurança: a mensagem atual "There is no user with this email" revela q
 
 ---
 
-## BUG-002 — Ecrã Publish não consegue sair: não fecha depois de publicar e a seta ← não funciona
+## BUG-002 — Ecrã Publish não consegue sair: não fecha depois de publicar, a seta ← não funciona e o Back do sistema fecha a app
 
 | Campo | Valor |
 |-------|-------|
@@ -129,6 +149,7 @@ Nota de segurança: a mensagem atual "There is no user with this email" revela q
 - **Comportamento enquanto o formulário está "preso":** a seta ← do topo **não faz nada** e o separador **Borrow não muda**. Os separadores da barra inferior (por exemplo, Profile) continuam a funcionar.
 - **Reprodução sem publicar nada (2026-10-30):** abrir o separador Publish e, com o formulário **vazio**, tocar na seta ← do topo. **Não acontece nada.** O defeito não depende do servidor nem da publicação: o `popBackStack()` deste ecrã não tem para onde voltar. Depois de publicar, o fecho usa o mesmo `popBackStack()` e falha da mesma maneira.
 - **Dependência do percurso (2026-10-30):** Home → Publish → Borrow → seta ←: o formulário **bloqueia** (seta, campos de texto, dropdowns e imagem deixam de funcionar; os dropdowns abrem, mas o valor escolhido não fica). Home → Profile → Home → Publish → seta ←: **funciona**, mas volta ao **Profile** e não à Home.
+- **Back do sistema (2026-11-06):** Home → Publish → botão **Back do Android**: a **app fecha** e o utilizador vai parar ao launcher, em vez de voltar à Home. Confirmado à mão. Também apareceu num teste automático: no TC-PUB-01 #5, o `hideKeyboard()` do Appium enviou um Back e a app saiu do ecrã (o dump mostra o launcher).
 - **Ambientes:** emulador Android 9.0 (API 28) e telemóvel Android 15. O comportamento é igual nos dois, por isso não depende da versão do Android.
 - Conclusão: o ecrã Publish fica **inativo**. Continua visível mas já não responde, o que aponta para um problema de navegação e não para os dados publicados.
 
@@ -174,6 +195,8 @@ Porquê, no `MainScreen.kt`: `popUpTo(bottomNavController.graph.startDestination
 - Quando o `HomeGraph` está na pilha, o `popUpTo` remove tudo o que está por cima dele, **incluindo o ecrã Home**. O grafo, sem ecrã, é depois descartado pela navegação.
 - Quando o `HomeGraph` já não está na pilha, o `popUpTo` **não encontra nada e não remove nada**. Os separadores anteriores (por exemplo, Profile) ficam acumulados.
 - Resultado: a Home nunca fica na base da pilha. Às vezes não há nada por baixo do Publish, e outras vezes está lá o separador errado.
+
+O **Back do sistema** confirma a mesma causa por outro lado. Quando a pilha da navegação não tem nada por baixo do Publish, o `NavHost` não consome o Back, e o Android passa-o à Activity, que **termina e fecha a app**.
 
 O comportamento do formulário bloqueado também bate com isto. Os dropdowns abrem porque usam estado local do ecrã (`remember`). Os campos não guardam o texto porque dependem do ViewModel, e o ecrã já não está ativo (`collectAsStateWithLifecycle` parou).
 
@@ -245,8 +268,9 @@ Nota: o `OkHttpClient` tem `retryOnConnectionFailure(true)`. Com o túnel ngrok,
 
 ### Verificação após correção
 1. `npm run test:publicar`: TC-PUB-01 #1, #2 e TC-PUB-03 #1 devem passar (o formulário fecha e o recurso fica criado).
-2. Os testes que já passavam (TC-PUB-01 #3–#5, TC-PUB-02 #1–#3) devem continuar a passar.
-3. Confirmar na API que **só existe um** recurso com cada título (sem duplicados).
+2. Manual: Home → Publish → Back do sistema deve voltar à Home e não fechar a app.
+3. Os testes que já passavam (TC-PUB-01 #3–#5, TC-PUB-02 #1–#3) devem continuar a passar.
+4. Confirmar na API que **só existe um** recurso com cada título (sem duplicados).
 
 ---
 
@@ -308,6 +332,60 @@ Isto explica o que se vê no teste manual: a 2.ª compra é **criada**, e só de
 ### Verificação após correção
 1. `npm run test:comprar`: o TC-COM-04 #1 deve passar (exatamente 1 compra nova).
 2. Confirmar à mão que um duplo toque cria só uma compra.
+
+---
+
+## BUG-004 — Pedido de empréstimo aceita data de início no passado
+
+| Campo | Valor |
+|-------|-------|
+| **Data** | 2026-11-06 |
+| **Requisito** | RF05 — Pedir emprestado (CA05.3: a data de início não pode ser anterior a hoje) |
+| **Caso de teste** | TC-EMP-03 #1 início = hoje − 1 dia |
+| **Técnica** | Análise de Valor Fronteira |
+| **Componente** | App Android: `presentation/borrow/BorrowScreen.kt`, `BorrowUiState.kt`. Backend: `operation-service` (`borrowingService.createBorrowReq`) |
+| **Severidade** | Média: é possível criar pedidos de empréstimo com períodos já passados. O dono recebe um pedido sem sentido e os dados ficam inconsistentes (empréstimos "a decorrer" desde uma data passada) |
+| **Prioridade** | Média |
+| **Estado** | Aberto. Confirmado no teste automático e à mão, e a causa está identificada no código |
+
+### Passos para reproduzir
+1. Iniciar sessão como `aluno1@ipca.pt`.
+2. Abrir um recurso de empréstimo de outro utilizador e tocar em **Ask for loan**.
+3. Tocar na data de **Start** e escolher **ontem** → OK.
+4. Escolher uma data de **End** futura (por exemplo, hoje + 7) e o ponto de encontro.
+
+### Resultado esperado
+Os dias anteriores a hoje não podem ser escolhidos no seletor da data de início. Em alternativa, a data é rejeitada e o botão **Submit Request** fica desativado.
+
+### Resultado obtido
+A data de ontem é aceite, aparece no campo Start e o botão **Submit Request** fica **ativo**.
+
+Evidência:
+- Mocha: `a data de ontem foi aceite e o botão está ativo` (`emprestimo.test.js:83`).
+- Confirmado à mão em 2026-11-06.
+- O caso fronteira válido (início = hoje, TC-EMP-03 #2) passa, por isso o defeito está só no limite inferior.
+
+### Análise da causa
+**App (`BorrowScreen.kt`):** o seletor da data de **fim** recebe `minDateInclusive = startDate + 1`, e por isso não deixa escolher datas inválidas (o TC-EMP-02 confirma que funciona). O seletor da data de **início** é criado **sem** `minDateInclusive`:
+```kotlin
+IsoDatePickerDialog(
+    initial = state.startDate ... ?: LocalDate.now().toString(),
+    onConfirm = { viewModel.onStartDateChange(it) ... },   // sem minDateInclusive
+```
+No `IsoDatePickerDialog`, `isSelectableDate` devolve `true` para **todos** os dias quando `minDateInclusive` é `null`.
+
+**App (`BorrowUiState.canSubmit`):** só verifica se as datas estão preenchidas e se `endDate > startDate`. Não compara `startDate` com hoje.
+
+**Backend (`borrowingService.createBorrowReq`):** só valida `startDate >= endDate`. Também aceita uma data de início no passado, por isso não há nenhuma camada a proteger esta regra.
+
+### Correção proposta (não aplicada)
+1. `BorrowScreen.kt`: passar `minDateInclusive = LocalDate.now()` ao seletor da data de início.
+2. `BorrowUiState.canSubmit`: acrescentar `startDate >= LocalDate.now().toString()` (a comparação de texto funciona para datas ISO).
+3. Backend: em `createBorrowReq`, rejeitar com `400` quando `startDate` for anterior a hoje. A regra tem de existir no servidor, porque outros clientes (o painel web, ou chamadas diretas à API) não passam pela validação da app.
+
+### Verificação após correção
+1. `npm run test:emprestimo`: o TC-EMP-03 #1 deve passar, e o TC-EMP-03 #2 e o TC-EMP-02 devem continuar a passar.
+2. Pedido direto à API com `startDate` = ontem: esperado `400`.
 
 ---
 
