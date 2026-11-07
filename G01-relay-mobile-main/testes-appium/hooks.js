@@ -1,5 +1,5 @@
 // Hooks globais do Mocha (carregados pelo .mocharc.js): dão nome ao vídeo de cada teste
-// e apagam-no se o teste passou. Para guardar todos os vídeos: GRAVAR_TUDO=1.
+// Por omissão guarda TODOS os vídeos. Para apagar os dos testes que passaram: APAGAR_PASSADOS=1.
 const fs = require('fs');
 const h = require('./helpers');
 
@@ -10,7 +10,7 @@ exports.mochaHooks = {
     },
     afterEach() {
         const v = h.estado.ultimoVideo;
-        if (v && this.currentTest.state === 'passed' && process.env.GRAVAR_TUDO !== '1') {
+        if (v && this.currentTest.state === 'passed' && process.env.APAGAR_PASSADOS === '1') {
             try { fs.unlinkSync(v); } catch { /* ignorar */ }
         }
     }
