@@ -14,7 +14,7 @@ const UNIVERSIDADE = process.env.UNIVERSIDADE || 'University of Porto'; // texto
 // ---------------------------------------------------------------- sessão
 // Abre uma sessão nova (app limpa, deslogada)
 async function criarDriver() {
-    return remote({
+    const driver = await remote({
         hostname: '127.0.0.1',
         port: 4723,
         path: '/',
@@ -33,6 +33,37 @@ async function criarDriver() {
                 : { 'appium:appPackage': 'ipca.api.relay', 'appium:appActivity': '.MainActivity' })
         }
     });
+    await iniciarGravacao(driver);
+    return driver;
+}
+
+// ---------------------------------------------------------------- vídeo
+// Cada teste é gravado (máx. 3 min, limite do Android). O vídeo é guardado em videos/ quando a
+// sessão termina e o hooks.js apaga-o se o teste passou (GRAVAR_TUDO=1 mantém todos; GRAVAR=0 desliga).
+const GRAVAR = process.env.GRAVAR !== '0';
+const estado = { titulo: 'teste', ultimoVideo: null };
+
+async function iniciarGravacao(driver) {
+    if (!GRAVAR) return;
+    try {
+        await driver.startRecordingScreen({ timeLimit: 180 });
+    } catch (e) { return; } // sem gravação não se perde o teste
+    // guardar o vídeo mesmo quando os ficheiros de teste só chamam deleteSession()
+    driver.overwriteCommand('deleteSession', async function (original, ...args) {
+        await guardarVideo(driver);
+        return original(...args);
+    });
+}
+
+async function guardarVideo(driver) {
+    try {
+        const base64 = await driver.stopRecordingScreen();
+        if (!base64) return;
+        fs.mkdirSync('videos', { recursive: true });
+        const ficheiro = `videos/${estado.titulo.replace(/[^a-z0-9]+/gi, '_').slice(0, 100)}.mp4`;
+        fs.writeFileSync(ficheiro, Buffer.from(base64, 'base64'));
+        estado.ultimoVideo = ficheiro;
+    } catch { /* sessão já morta: ignorar */ }
 }
 
 // ---------------------------------------------------------------- elementos
@@ -372,5 +403,5 @@ module.exports = {
     iso, hojeMais, fazerLogin, iniciarSessao, irParaHome, abrirRecurso, abrirFormularioPublicar,
     preencherFormulario, tocarPublicar, publicarRecurso, escolherPontoEncontro, escolherPagamento,
     escolherData, diaSelecionavel, contarHistorico, textosVisiveis, scrollAteTexto, tocarBotaoComScroll,
-    duploToque, USER1, USER2, TIMEOUT, PONTO_ENCONTRO, UNIVERSIDADE
+    duploToque, estado, GRAVAR, USER1, USER2, TIMEOUT, PONTO_ENCONTRO, UNIVERSIDADE
 };
