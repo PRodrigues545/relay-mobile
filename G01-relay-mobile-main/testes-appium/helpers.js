@@ -47,10 +47,7 @@ async function iniciarGravacao(driver) {
     if (!GRAVAR) return;
     try {
         await driver.startRecordingScreen({ timeLimit: 180 });
-    } catch (e) { // sem gravação não se perde o teste, mas avisa
-        console.warn(`[vídeo] não foi possível iniciar a gravação: ${String(e.message).split('\n')[0]}`);
-        return;
-    }
+    } catch (e) { return; } // sem gravação não se perde o teste
     // guardar o vídeo mesmo quando os ficheiros de teste só chamam deleteSession()
     driver.overwriteCommand('deleteSession', async function (original, ...args) {
         await guardarVideo(driver);
@@ -61,18 +58,12 @@ async function iniciarGravacao(driver) {
 async function guardarVideo(driver) {
     try {
         const base64 = await driver.stopRecordingScreen();
-        if (!base64) { console.warn('[vídeo] a gravação veio vazia'); return; }
+        if (!base64) return;
         fs.mkdirSync('videos', { recursive: true });
-        // hora no nome: nunca se sobrepõe a um vídeo anterior
-        const d = new Date(), p = (n) => String(n).padStart(2, '0');
-        const hora = `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}_${String(d.getMilliseconds()).padStart(3, '0')}`;
-        const ficheiro = `videos/${hora}_${estado.titulo.replace(/[^a-z0-9]+/gi, '_').slice(0, 100)}.mp4`;
+        const ficheiro = `videos/${estado.titulo.replace(/[^a-z0-9]+/gi, '_').slice(0, 100)}.mp4`;
         fs.writeFileSync(ficheiro, Buffer.from(base64, 'base64'));
         estado.ultimoVideo = ficheiro;
-        if (estado.titulo === 'teste') console.warn('[vídeo] hooks.js não foi carregado (falta o .mocharc.js?): o nome não tem o título do teste');
-    } catch (e) {
-        console.warn(`[vídeo] não foi possível guardar a gravação: ${String(e.message).split('\n')[0]}`);
-    }
+    } catch { /* sessão já morta: ignorar */ }
 }
 
 // ---------------------------------------------------------------- elementos
